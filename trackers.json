@@ -1,0 +1,29 @@
+{
+  "https://www.amazon.in/Cadbury-Bournvita-Chocolate-Health-Drink/dp/B07FS7C7B8": {
+    "cssSelector": "#corePriceDisplay_desktop_feature_div",
+    "targetPrice": 600,
+    "frequency": 1,
+    "selector": ".priceToPay",
+    "paused": true,
+    "lastPrice": 620,
+    "lastFetched": "20/9/2024, 9:24:52 pm"
+  },
+  "https://www.amazon.in/Hisense-inches-Tornado-55E7K-PRO/dp/B0C73QLNMV?th=1": {
+    "cssSelector": "#corePriceDisplay_desktop_feature_div",
+    "targetPrice": 42000,
+    "frequency": 1,
+    "selector": ".a-price-whole",
+    "paused": true,
+    "lastPrice": 45999,
+    "lastFetched": "20/9/2024, 10:18:36 pm"
+  },
+  "https://www.amazon.in/Safari-Crescent-Polycarbonate-Wheeling-Suitcase/dp/B097JMG6HN": {
+    "paused": true,
+    "frequency": 1,
+    "cssSelector": "#corePriceDisplay_desktop_feature_div",
+    "targetPrice": 3200,
+    "lastPrice": 3198,
+    "lastFetched": "20/9/2024, 11:09:07 pm",
+    "selector": ".a-price-whole"
+  }
+}

@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Price Tracker</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        input, button {
+            padding: 10px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ccc;
+            text-align: left;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 4px solid #3498db;
+            width: 20px;
+            height: 20px;
+            animation: spin 2s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <h1>Price Tracker</h1>
+    <form id="tracker-form">
+        <input type="text" id="url" placeholder="URL" required>
+        <input type="text" id="css-selector" placeholder="CSS Selector" required>
+        <input type="number" id="target-price" placeholder="Target Price" required>
+        <input type="number" id="frequency" placeholder="Frequency (mins)" required>
+        <button type="submit">Add</button>
+    </form>
+    <table>
+        <thead>
+            <tr>
+                <th>URL</th>
+                <th>CSS Selector</th>
+                <th>Target Price</th>
+                <th>Frequency (mins)</th>
+                <th>Last Price</th>
+                <th>Last Fetched</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="tracker-list"></tbody>
+    </table>
+
+    <script>
+        const form = document.getElementById('tracker-form');
+        const trackerList = document.getElementById('tracker-list');
+
+        form.addEventListener('submit', (event) => {
+            event.preventDefault();
+            const trackerData = {
+                url: document.getElementById('url').value,
+                cssSelector: document.getElementById('css-selector').value,
+                targetPrice: parseFloat(document.getElementById('target-price').value),
+                frequency: parseInt(document.getElementById('frequency').value, 10) // Frequency in minutes
+            };
+            window.electron.send('add-tracker', trackerData);
+        });
+
+        window.electron.receive('price-alert', (data) => {
+            const { url, price } = data;
+            alert(`Price alert for ${url}: ${price}`);
+        });
+
+        window.electron.receive('tracker-added', (data) => {
+            const { url, cssSelector, targetPrice, frequency } = data;
+            const row = document.createElement('tr');
+            row.className = 'tracker-item';
+            row.setAttribute('data-url', url);
+            row.innerHTML = `
+                <td>${url}</td>
+                <td>${cssSelector}</td>
+                <td>${targetPrice}</td>
+                <td>${frequency}</td>
+                <td class="last-price">N/A</td>
+                <td class="last-fetched">N/A</td>
+                <td>
+                    <div class="loader" style="display: none;"></div>
+                    <button class="run-pause"><i class="fas fa-pause"></i></button>
+                    <button class="delete"><i class="fas fa-trash-alt"></i></button>
+                </td>
+            `;
+            console.log(row);
+            trackerList.appendChild(row);
+        });
+
+        window.electron.receive('load-trackers', (trackers) => {
+            Object.keys(trackers).forEach(url => {
+                const { cssSelector, targetPrice, frequency, lastPrice, lastFetched, paused } = trackers[url];
+                const row = document.createElement('tr');
+                row.className = 'tracker-item';
+                row.setAttribute('data-url', url);
+                row.innerHTML = `
+                    <td>${url}</td>
+                    <td>${cssSelector}</td>
+                    <td>${targetPrice}</td>
+                    <td>${frequency}</td>
+                    <td class="last-price">${lastPrice}</td>
+                    <td class="last-fetched">${lastFetched}</td>
+                    <td>
+                        <div class="loader" style="display: none;"></div>
+                        <button class="run-pause"><i class="fas ${paused ? 'fa-play' : 'fa-pause'}"></i></button>
+                        <button class="delete"><i class="fas fa-trash-alt"></i></button>
+                    </td>
+                `;
+                trackerList.appendChild(row);
+            });
+        });
+
+        window.electron.receive('update-tracker', (data) => {
+            const { url, price, lastFetched } = data;
+            const row = document.querySelector(`[data-url="${url}"]`);
+            if (row) {
+                row.querySelector('.last-price').textContent = `${price}`;
+                row.querySelector('.last-fetched').textContent = `${lastFetched}`;
+            }
+        });
+
+        trackerList.addEventListener('click', (event) => {
+            const row = event.target.closest('.tracker-item');
+            const url = row.getAttribute('data-url');
+
+            if (event.target.closest('.delete')) {
+                window.electron.send('delete-tracker', { url });
+                row.remove();
+            } else if (event.target.closest('.run-pause') || event.target.closest('.run-pause i')) {
+                const icon = event.target.closest('.run-pause').querySelector('i');
+                const isPaused = icon.classList.contains('fa-play');
+                window.electron.send(isPaused ? 'resume-tracker' : 'pause-tracker', { url });
+                icon.classList.toggle('fa-play');
+                icon.classList.toggle('fa-pause');
+            }
+        });
+    </script>
+</body>
+</html>
